@@ -35,6 +35,7 @@
         }
         .status-live { background: rgba(0, 200, 83, 0.2); color: #00c853; border: 1px solid rgba(0, 200, 83, 0.3); }
         .status-demo { background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3); }
+        .status-paper { background: rgba(33, 150, 243, 0.2); color: #2196f3; border: 1px solid rgba(33, 150, 243, 0.3); }
 
         .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
 
@@ -171,6 +172,7 @@
             <button class="tab active" onclick="switchTab('market')">Market</button>
             <button class="tab" onclick="switchTab('predict')">Predictions</button>
             <button class="tab" onclick="switchTab('backtest')">Backtest</button>
+            <button class="tab" onclick="switchTab('trading')">Trading</button>
         </div>
     </div>
 </div>
@@ -237,6 +239,27 @@
                         </select>
                     </div>
                     <button class="btn btn-gold" onclick="fetchGoldData()">Fetch Gold Data</button>
+
+                    <hr style="border-color: rgba(255,255,255,0.06); margin: 16px 0;">
+                    <div style="font-size: 13px; font-weight: 600; color: #ffd700; margin-bottom: 8px;">Alpaca Trading</div>
+                    <div class="control-group">
+                        <label>Alpaca API Key</label>
+                        <input type="password" id="alpacaKey" placeholder="PK...">
+                    </div>
+                    <div class="control-group">
+                        <label>Alpaca Secret Key</label>
+                        <input type="password" id="alpacaSecret" placeholder="Secret...">
+                    </div>
+                    <div class="control-group">
+                        <label>Trading Mode</label>
+                        <select id="alpacaMode">
+                            <option value="paper" selected>Paper Trading (Safe)</option>
+                            <option value="live">Live Trading (Real Money)</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-green" onclick="connectAlpaca()">Connect Alpaca</button>
+                    <div style="font-size: 11px; color: #666; margin-top: 4px;" id="alpacaStatusText">Not connected</div>
+                    <button class="btn btn-blue" style="margin-top: 8px;" onclick="fetchAlpacaGold()">Fetch Gold via Alpaca</button>
 
                     <hr style="border-color: rgba(255,255,255,0.06); margin: 16px 0;">
 
@@ -326,6 +349,123 @@
                     </div>
                 </div>
                 <div class="chart-container-sm" id="chartBacktest"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Trading Tab -->
+    <div class="tab-content" id="tabTrading">
+        <div class="grid-2col">
+            <div>
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">
+                        <h2>Account Overview</h2>
+                        <span class="status-badge status-paper" id="tradingModeBadge">PAPER</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="backtest-stats" id="accountStats" style="display:none;">
+                            <div class="backtest-stat">
+                                <div class="val" id="acctEquity">--</div>
+                                <div class="lbl">Equity</div>
+                            </div>
+                            <div class="backtest-stat">
+                                <div class="val" id="acctCash">--</div>
+                                <div class="lbl">Cash</div>
+                            </div>
+                            <div class="backtest-stat">
+                                <div class="val" id="acctBuyingPower">--</div>
+                                <div class="lbl">Buying Power</div>
+                            </div>
+                            <div class="backtest-stat">
+                                <div class="val" id="acctPortfolio">--</div>
+                                <div class="lbl">Portfolio Value</div>
+                            </div>
+                        </div>
+                        <div id="noAlpacaMsg" style="text-align:center; color:#555; padding: 30px; font-size: 13px;">
+                            Connect your Alpaca account in Settings to start trading.<br>
+                            <span style="font-size: 11px; color: #444;">Sign up free at <b>alpaca.markets</b></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header">
+                        <h2>Open Positions</h2>
+                        <button class="btn btn-blue" style="width:auto; margin:0; padding:6px 16px;" onclick="loadPositions()">Refresh</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="signal-list" id="positionsList">
+                            <div style="text-align:center; color:#555; padding: 20px; font-size: 13px;">No positions</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Recent Orders</h2>
+                        <button class="btn btn-blue" style="width:auto; margin:0; padding:6px 16px;" onclick="loadOrders()">Refresh</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="signal-list" id="ordersList">
+                            <div style="text-align:center; color:#555; padding: 20px; font-size: 13px;">No orders</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2>Place Order</h2></div>
+                <div class="card-body">
+                    <div class="control-group">
+                        <label>Symbol</label>
+                        <input type="text" id="tradeSymbol" value="XAUUSD" placeholder="XAUUSD">
+                    </div>
+                    <div class="control-group">
+                        <label>Side</label>
+                        <select id="tradeSide">
+                            <option value="buy">Buy</option>
+                            <option value="sell">Sell</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Order Type</label>
+                        <select id="tradeType" onchange="toggleLimitStop()">
+                            <option value="market">Market</option>
+                            <option value="limit">Limit</option>
+                            <option value="stop">Stop</option>
+                            <option value="stop_limit">Stop Limit</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Quantity</label>
+                        <input type="number" id="tradeQty" placeholder="e.g. 1" min="0" step="0.01">
+                    </div>
+                    <div class="control-group" id="notionalGroup">
+                        <label>Or Notional ($)</label>
+                        <input type="number" id="tradeNotional" placeholder="e.g. 500" min="0" step="1">
+                    </div>
+                    <div class="control-group" id="limitPriceGroup" style="display:none;">
+                        <label>Limit Price</label>
+                        <input type="number" id="tradeLimitPrice" placeholder="Limit price" step="0.01">
+                    </div>
+                    <div class="control-group" id="stopPriceGroup" style="display:none;">
+                        <label>Stop Price</label>
+                        <input type="number" id="tradeStopPrice" placeholder="Stop price" step="0.01">
+                    </div>
+                    <div class="control-group">
+                        <label>Time in Force</label>
+                        <select id="tradeTIF">
+                            <option value="gtc">GTC (Good til Cancelled)</option>
+                            <option value="day">Day</option>
+                            <option value="ioc">IOC (Immediate or Cancel)</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-gold" onclick="placeOrder()" id="placeOrderBtn">Place Order</button>
+                    <div style="font-size:11px; color:#ff9800; margin-top:8px; text-align:center;" id="tradeWarning">
+                        Ensure you are in paper mode for testing
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -510,6 +650,175 @@ async function runBacktest() {
         showToast('Backtest failed: ' + e.message, 'error');
     } finally {
         loading.classList.remove('active');
+    }
+}
+
+function toggleLimitStop() {
+    const type = document.getElementById('tradeType').value;
+    document.getElementById('limitPriceGroup').style.display =
+        (type === 'limit' || type === 'stop_limit') ? 'block' : 'none';
+    document.getElementById('stopPriceGroup').style.display =
+        (type === 'stop' || type === 'stop_limit') ? 'block' : 'none';
+}
+
+async function connectAlpaca() {
+    try {
+        const resp = await fetch('/api/alpaca/connect', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                alpaca_key: document.getElementById('alpacaKey').value,
+                alpaca_secret: document.getElementById('alpacaSecret').value,
+                paper: document.getElementById('alpacaMode').value === 'paper'
+            })
+        });
+        const data = await resp.json();
+        if (!data.success) { showToast(data.error, 'error'); return; }
+
+        const a = data.account;
+        document.getElementById('alpacaStatusText').textContent = 'Connected (' + data.mode + ')';
+        document.getElementById('alpacaStatusText').style.color = '#00e676';
+
+        document.getElementById('accountStats').style.display = 'grid';
+        document.getElementById('noAlpacaMsg').style.display = 'none';
+        document.getElementById('acctEquity').textContent = '$' + parseFloat(a.equity).toLocaleString();
+        document.getElementById('acctCash').textContent = '$' + parseFloat(a.cash).toLocaleString();
+        document.getElementById('acctBuyingPower').textContent = '$' + parseFloat(a.buying_power).toLocaleString();
+        document.getElementById('acctPortfolio').textContent = '$' + parseFloat(a.portfolio_value).toLocaleString();
+
+        const badge = document.getElementById('tradingModeBadge');
+        if (data.mode === 'live') {
+            badge.textContent = 'LIVE';
+            badge.className = 'status-badge status-live';
+            document.getElementById('tradeWarning').textContent = 'WARNING: Live trading with real money!';
+            document.getElementById('tradeWarning').style.color = '#ff5252';
+        } else {
+            badge.textContent = 'PAPER';
+            badge.className = 'status-badge status-paper';
+            document.getElementById('tradeWarning').textContent = 'Paper trading mode - no real money';
+            document.getElementById('tradeWarning').style.color = '#2196f3';
+        }
+
+        showToast('Alpaca connected: ' + data.mode + ' mode', 'success');
+        loadPositions();
+        loadOrders();
+    } catch (e) {
+        showToast('Connection failed: ' + e.message, 'error');
+    }
+}
+
+async function fetchAlpacaGold() {
+    try {
+        const resp = await fetch('/api/alpaca/gold-data', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                timeframe: document.getElementById('interval').value === 'daily' ? '1Day' :
+                           document.getElementById('interval').value === '4hour' ? '4Hour' :
+                           document.getElementById('interval').value
+            })
+        });
+        const data = await resp.json();
+        if (!data.success) { showToast(data.error, 'error'); return; }
+
+        document.getElementById('mPrice').textContent = '$' + data.current_price.toLocaleString();
+        const badge = document.getElementById('statusBadge');
+        badge.textContent = 'ALPACA LIVE';
+        badge.className = 'status-badge status-live';
+
+        showToast(data.data_points + ' bars loaded from Alpaca', 'success');
+        fetchGoldData();
+    } catch (e) {
+        showToast('Alpaca data fetch failed: ' + e.message, 'error');
+    }
+}
+
+async function loadPositions() {
+    try {
+        const resp = await fetch('/api/alpaca/positions');
+        const data = await resp.json();
+        if (!data.success) return;
+
+        const list = document.getElementById('positionsList');
+        if (data.positions.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:#555; padding:20px; font-size:13px;">No open positions</div>';
+            return;
+        }
+        let html = '';
+        data.positions.forEach(p => {
+            const plClass = parseFloat(p.unrealized_pl) >= 0 ? 'positive' : 'negative';
+            html += '<div class="signal-item">' +
+                '<span><b>' + p.symbol + '</b></span>' +
+                '<span>' + p.qty + ' ' + p.side + '</span>' +
+                '<span>$' + parseFloat(p.current_price).toFixed(2) + '</span>' +
+                '<span class="' + plClass + '">$' + parseFloat(p.unrealized_pl).toFixed(2) + '</span>' +
+                '</div>';
+        });
+        list.innerHTML = html;
+    } catch (e) {}
+}
+
+async function loadOrders() {
+    try {
+        const resp = await fetch('/api/alpaca/orders');
+        const data = await resp.json();
+        if (!data.success) return;
+
+        const list = document.getElementById('ordersList');
+        if (data.orders.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:#555; padding:20px; font-size:13px;">No recent orders</div>';
+            return;
+        }
+        let html = '';
+        data.orders.forEach(o => {
+            const sideClass = o.side === 'buy' ? 'signal-buy' : 'signal-sell';
+            const statusColor = o.status === 'filled' ? '#00e676' : (o.status === 'cancelled' ? '#ff5252' : '#ffd600');
+            html += '<div class="signal-item">' +
+                '<span><b>' + o.symbol + '</b></span>' +
+                '<span class="signal-badge ' + sideClass + '">' + o.side.toUpperCase() + '</span>' +
+                '<span>' + (o.filled_qty || o.qty) + ' @ ' + (o.filled_avg_price || o.type) + '</span>' +
+                '<span style="color:' + statusColor + '">' + o.status + '</span>' +
+                '</div>';
+        });
+        list.innerHTML = html;
+    } catch (e) {}
+}
+
+async function placeOrder() {
+    const side = document.getElementById('tradeSide').value;
+    const mode = document.getElementById('alpacaMode').value;
+    if (mode === 'live' && !confirm('You are in LIVE mode. This will use real money. Continue?')) return;
+
+    try {
+        const payload = {
+            symbol: document.getElementById('tradeSymbol').value,
+            side: side,
+            order_type: document.getElementById('tradeType').value,
+            time_in_force: document.getElementById('tradeTIF').value,
+        };
+        const qty = document.getElementById('tradeQty').value;
+        const notional = document.getElementById('tradeNotional').value;
+        if (qty) payload.qty = parseFloat(qty);
+        if (notional && !qty) payload.notional = parseFloat(notional);
+
+        const limitPrice = document.getElementById('tradeLimitPrice').value;
+        const stopPrice = document.getElementById('tradeStopPrice').value;
+        if (limitPrice) payload.limit_price = parseFloat(limitPrice);
+        if (stopPrice) payload.stop_price = parseFloat(stopPrice);
+
+        const resp = await fetch('/api/alpaca/trade', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (!data.success) { showToast(data.error, 'error'); return; }
+
+        showToast(data.order.side.toUpperCase() + ' ' + data.order.symbol + ' - ' + data.order.status + ' (' + data.mode + ')', 'success');
+        loadOrders();
+        loadPositions();
+    } catch (e) {
+        showToast('Order failed: ' + e.message, 'error');
     }
 }
 

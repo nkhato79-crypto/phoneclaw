@@ -30,6 +30,63 @@ tokenizer = None
 model = None
 predictor = None
 
+alpaca_clients = {}
+
+
+def get_alpaca_headers(api_key, api_secret):
+    return {
+        'APCA-API-KEY-ID': api_key,
+        'APCA-API-SECRET-KEY': api_secret,
+        'Content-Type': 'application/json'
+    }
+
+
+def get_alpaca_base_url(paper=True):
+    if paper:
+        return 'https://paper-api.alpaca.markets'
+    return 'https://api.alpaca.markets'
+
+
+ALPACA_DATA_URL = 'https://data.alpaca.markets'
+
+
+def fetch_gold_data_alpaca(api_key, api_secret, timeframe='1Hour', limit=500):
+    """Fetch gold (XAU/USD) bars from Alpaca Market Data API."""
+    headers = get_alpaca_headers(api_key, api_secret)
+    url = f"{ALPACA_DATA_URL}/v1beta1/forex/bars"
+    params = {
+        'symbols': 'XAU/USD',
+        'timeframe': timeframe,
+        'limit': limit,
+        'sort': 'asc'
+    }
+    resp = requests.get(url, headers=headers, params=params, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+
+    bars = data.get('bars', {}).get('XAU/USD', [])
+    if not bars:
+        return None
+
+    rows = []
+    for bar in bars:
+        rows.append({
+            'timestamps': bar['t'],
+            'open': bar['o'],
+            'high': bar['h'],
+            'low': bar['l'],
+            'close': bar['c'],
+            'volume': bar.get('v', 0)
+        })
+
+    df = pd.DataFrame(rows)
+    df['timestamps'] = pd.to_datetime(df['timestamps'])
+    for col in ['open', 'high', 'low', 'close', 'volume']:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    df = df.dropna().reset_index(drop=True)
+    return df
+
+
 AVAILABLE_MODELS = {
     'kronos-mini': {
         'name': 'Kronos-mini',
@@ -563,6 +620,248 @@ def model_status():
         'loaded': predictor is not None,
         'models': AVAILABLE_MODELS
     })
+
+
+@app.route('/api/alpaca/connect', methods=['POST'])
+def alpaca_connect():
+    """Connect to Alpaca and return account info."""
+    try:
+        data = request.get_json() or {}
+        api_key = data.get('alpaca_key', '')
+        api_secret = data.get('alpaca_secret', '')
+        paper = data.get('paper', True)
+
+        if not api_key or not api_secret:
+            return jsonify({'error': 'API key and secret are required'}), 400
+
+        headers = get_alpaca_headers(api_key, api_secret)
+        base_url = get_alpaca_base_url(paper)
+        resp = requests.get(f"{base_url}/v2/account", headers=headers, timeout=15)
+        resp.raise_for_status()
+        account = resp.json()
+
+        alpaca_clients['key'] = api_key
+        alpaca_clients['secret'] = api_secret
+        alpaca_clients['paper'] = paper
+
+        return jsonify({
+            'success': True,
+            'account': {
+                'id': account.get('id'),
+                'status': account.get('status'),
+                'buying_power': account.get('buying_power'),
+                'cash': account.get('cash'),
+                'portfolio_value': account.get('portfolio_value'),
+                'equity': account.get('equity'),
+                'currency': account.get('currency'),
+                'pattern_day_trader': account.get('pattern_day_trader'),
+                'trading_blocked': account.get('trading_blocked'),
+                'account_blocked': account.get('account_blocked'),
+            },
+            'mode': 'paper' if paper else 'live'
+        })
+    except requests.exceptions.HTTPError as e:
+        return jsonify({'error': f'Alpaca auth failed: {e.response.status_code} {e.response.text[:200]}'}), 401
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/alpaca/gold-data', methods=['POST'])
+def alpaca_gold_data():
+    """Fetch gold data via Alpaca Market Data API."""
+    try:
+        data = request.get_json() or {}
+        api_key = data.get('alpaca_key', alpaca_clients.get('key', ''))
+        api_secret = data.get('alpaca_secret', alpaca_clients.get('secret', ''))
+        timeframe = data.get('timeframe', '1Hour')
+        limit = int(data.get('limit', 500))
+
+        if not api_key or not api_secret:
+            return jsonify({'error': 'Alpaca credentials required. Connect first.'}), 400
+
+        df = fetch_gold_data_alpaca(api_key, api_secret, timeframe, limit)
+        if df is None or len(df) == 0:
+            return jsonify({'error': 'No gold data returned from Alpaca'}), 400
+
+        cache_path = os.path.join(os.path.dirname(__file__), '_gold_cache.csv')
+        df.to_csv(cache_path, index=False)
+
+        current_price = float(df['close'].iloc[-1])
+        price_24h_ago = float(df['close'].iloc[-min(24, len(df))])
+        change_24h = (current_price - price_24h_ago) / price_24h_ago * 100
+
+        return jsonify({
+            'success': True,
+            'source': 'alpaca',
+            'data_points': len(df),
+            'current_price': round(current_price, 2),
+            'change_24h': round(change_24h, 2),
+            'high_24h': round(float(df['high'].iloc[-min(24, len(df)):].max()), 2),
+            'low_24h': round(float(df['low'].iloc[-min(24, len(df)):].min()), 2),
+            'timeframe': timeframe
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/alpaca/positions', methods=['GET'])
+def alpaca_positions():
+    """Get current open positions."""
+    try:
+        api_key = alpaca_clients.get('key', '')
+        api_secret = alpaca_clients.get('secret', '')
+        paper = alpaca_clients.get('paper', True)
+        if not api_key:
+            return jsonify({'error': 'Not connected to Alpaca'}), 400
+
+        headers = get_alpaca_headers(api_key, api_secret)
+        base_url = get_alpaca_base_url(paper)
+        resp = requests.get(f"{base_url}/v2/positions", headers=headers, timeout=15)
+        resp.raise_for_status()
+        positions = resp.json()
+
+        result = []
+        for pos in positions:
+            result.append({
+                'symbol': pos.get('symbol'),
+                'qty': pos.get('qty'),
+                'side': pos.get('side'),
+                'avg_entry': pos.get('avg_entry_price'),
+                'current_price': pos.get('current_price'),
+                'market_value': pos.get('market_value'),
+                'unrealized_pl': pos.get('unrealized_pl'),
+                'unrealized_plpc': pos.get('unrealized_plpc'),
+            })
+
+        return jsonify({'success': True, 'positions': result})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/alpaca/orders', methods=['GET'])
+def alpaca_orders():
+    """Get recent orders."""
+    try:
+        api_key = alpaca_clients.get('key', '')
+        api_secret = alpaca_clients.get('secret', '')
+        paper = alpaca_clients.get('paper', True)
+        if not api_key:
+            return jsonify({'error': 'Not connected to Alpaca'}), 400
+
+        headers = get_alpaca_headers(api_key, api_secret)
+        base_url = get_alpaca_base_url(paper)
+        resp = requests.get(f"{base_url}/v2/orders", headers=headers,
+                            params={'status': 'all', 'limit': 20}, timeout=15)
+        resp.raise_for_status()
+        orders = resp.json()
+
+        result = []
+        for o in orders:
+            result.append({
+                'id': o.get('id'),
+                'symbol': o.get('symbol'),
+                'side': o.get('side'),
+                'type': o.get('type'),
+                'qty': o.get('qty'),
+                'filled_qty': o.get('filled_qty'),
+                'filled_avg_price': o.get('filled_avg_price'),
+                'status': o.get('status'),
+                'submitted_at': o.get('submitted_at'),
+            })
+
+        return jsonify({'success': True, 'orders': result})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/alpaca/trade', methods=['POST'])
+def alpaca_trade():
+    """Place a trade order via Alpaca."""
+    try:
+        data = request.get_json() or {}
+        api_key = alpaca_clients.get('key', '')
+        api_secret = alpaca_clients.get('secret', '')
+        paper = alpaca_clients.get('paper', True)
+        if not api_key:
+            return jsonify({'error': 'Not connected to Alpaca'}), 400
+
+        symbol = data.get('symbol', 'XAUUSD')
+        side = data.get('side', 'buy')
+        qty = data.get('qty')
+        notional = data.get('notional')
+        order_type = data.get('order_type', 'market')
+        time_in_force = data.get('time_in_force', 'gtc')
+        limit_price = data.get('limit_price')
+        stop_price = data.get('stop_price')
+
+        if not qty and not notional:
+            return jsonify({'error': 'Specify qty or notional amount'}), 400
+
+        headers = get_alpaca_headers(api_key, api_secret)
+        base_url = get_alpaca_base_url(paper)
+
+        order_payload = {
+            'symbol': symbol,
+            'side': side,
+            'type': order_type,
+            'time_in_force': time_in_force,
+        }
+        if qty:
+            order_payload['qty'] = str(qty)
+        if notional:
+            order_payload['notional'] = str(notional)
+        if limit_price and order_type in ('limit', 'stop_limit'):
+            order_payload['limit_price'] = str(limit_price)
+        if stop_price and order_type in ('stop', 'stop_limit'):
+            order_payload['stop_price'] = str(stop_price)
+
+        resp = requests.post(f"{base_url}/v2/orders", headers=headers,
+                             json=order_payload, timeout=15)
+        resp.raise_for_status()
+        order = resp.json()
+
+        return jsonify({
+            'success': True,
+            'order': {
+                'id': order.get('id'),
+                'symbol': order.get('symbol'),
+                'side': order.get('side'),
+                'type': order.get('type'),
+                'qty': order.get('qty'),
+                'status': order.get('status'),
+                'submitted_at': order.get('submitted_at'),
+            },
+            'mode': 'paper' if paper else 'LIVE'
+        })
+    except requests.exceptions.HTTPError as e:
+        return jsonify({'error': f'Order failed: {e.response.status_code} {e.response.text[:300]}'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/alpaca/cancel-order', methods=['POST'])
+def alpaca_cancel_order():
+    """Cancel an open order."""
+    try:
+        data = request.get_json() or {}
+        order_id = data.get('order_id')
+        api_key = alpaca_clients.get('key', '')
+        api_secret = alpaca_clients.get('secret', '')
+        paper = alpaca_clients.get('paper', True)
+
+        if not api_key:
+            return jsonify({'error': 'Not connected to Alpaca'}), 400
+        if not order_id:
+            return jsonify({'error': 'order_id required'}), 400
+
+        headers = get_alpaca_headers(api_key, api_secret)
+        base_url = get_alpaca_base_url(paper)
+        resp = requests.delete(f"{base_url}/v2/orders/{order_id}", headers=headers, timeout=15)
+        resp.raise_for_status()
+
+        return jsonify({'success': True, 'message': f'Order {order_id} cancelled'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
