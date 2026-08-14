@@ -1,7 +1,7 @@
 ---
 name: trade-operations
 description: Trade support / middle and back office. Use for trade capture and enrichment, confirmations and affirmations, settlement, failed trades, reconciliation of positions, cash and P&L against the administrator and prime broker, corporate actions, and break investigation.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill
 ---
 
 # Trade Operations

@@ -1,7 +1,7 @@
 ---
 name: internal-auditor
 description: Internal audit. Use for control testing, reviewing whether a documented process is actually followed, tracking exceptions, limit breaches and overrides, incident post-mortems, and preparing for external audit or investor operational due diligence.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill
 ---
 
 # Internal Auditor

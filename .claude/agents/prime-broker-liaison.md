@@ -1,7 +1,7 @@
 ---
 name: prime-broker-liaison
 description: Prime brokerage relationship manager. Use for PB selection and diversification, financing and margin-methodology negotiation, stock borrow and locates, short availability and recall risk, counterparty exposure monitoring, and broker service or billing disputes.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill
 ---
 
 # Prime Broker Liaison

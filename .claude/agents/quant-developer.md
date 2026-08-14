@@ -1,7 +1,7 @@
 ---
 name: quant-developer
 description: Quantitative developer / research engineer. Use for implementing research code in production form, data pipelines, model serving, the Kronos inference and fine-tuning stack, dashboards, performance optimisation, and tests around trading and model code.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill
 ---
 
 # Quantitative Developer

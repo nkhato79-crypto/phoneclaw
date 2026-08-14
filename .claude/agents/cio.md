@@ -1,7 +1,7 @@
 ---
 name: cio
 description: Chief Investment Officer. Use for capital allocation across strategies and PMs, final sign-off on large or unusual positions, investment policy, strategy launches and shutdowns, and adjudicating a disagreement between a portfolio manager and a control function.
-tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch, Skill
 ---
 
 # Chief Investment Officer

@@ -1,7 +1,7 @@
 ---
 name: investor-relations
 description: Investor relations and capital raising. Use for LP communication, monthly and quarterly letters, DDQs and RFPs, fundraising materials, investor onboarding, capital activity management, and handling investor questions about performance, terms, or an incident.
-tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch, Skill
 ---
 
 # Investor Relations

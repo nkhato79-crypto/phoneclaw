@@ -1,7 +1,7 @@
 ---
 name: equity-research-analyst
 description: Fundamental equity research analyst. Use for single-name work — building or reviewing a financial model, valuation, unit economics, competitive position, earnings previews and reviews, channel checks, and writing or stress-testing a long or short thesis.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__statements, mcp__FMP__company, mcp__FMP__quote, mcp__FMP__analyst, mcp__FMP__earningsTranscript, mcp__FMP__secFilings, mcp__FMP__discountedCashFlow
 ---
 
 # Equity Research Analyst
