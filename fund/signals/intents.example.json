@@ -1,0 +1,25 @@
+{
+  "_comment": "Written by the agents; read by fund/platform/autotrade.py. Agents never call the broker directly.",
+  "generated_by": "portfolio-manager",
+  "generated_at": "2026-08-16T05:00:00+00:00",
+  "intents": [
+    {
+      "id": "2026-08-16-xauusd-01",
+      "action": "open",
+      "symbol": "XAUUSD",
+      "direction": "long",
+      "sl": 4365.0,
+      "tp": 4589.0,
+      "risk_fraction": 0.005,
+      "expires_at": "2026-08-16T18:00:00+00:00",
+      "rationale": "Above the 50-day, target is the 200-day at 4589 which is the level that flips the trend read. Stop below Friday's low.",
+      "cleared_by": ["risk-manager", "compliance-officer"]
+    },
+    {
+      "id": "2026-08-16-close-01",
+      "action": "close",
+      "ticket": 123456789,
+      "rationale": "Thesis break: 10y real yields through the level that invalidates the long."
+    }
+  ]
+}

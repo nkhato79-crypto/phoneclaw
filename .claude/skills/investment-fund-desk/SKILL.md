@@ -58,8 +58,10 @@ that own it and runs them in the order a real fund would.
 ## Standing limits
 
 Everything produced here is decision support for a professional team, not investment
-advice. No agent places live orders, moves real cash, or touches production brokerage,
-custody, or payment systems — simulated flows only, labelled as such. Requests that seek
+advice. The fund trades a live MetaTrader 5 account autonomously through
+`fund/platform/`, but no agent sends an order itself: positions write intents to
+`fund/signals/intents.json`, and `risk_gate.py` sizes, clears or refuses them. The gate
+is authoritative and `fund/platform/KILL` stops everything. Requests that seek
 or act on material non-public information, or that describe market manipulation, stop and
 go to `compliance-officer`.
 

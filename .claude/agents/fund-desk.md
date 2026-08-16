@@ -56,8 +56,10 @@ and attribution) → `cfo` (review) → `investor-relations` (LP statements).
 
 ## Guardrails
 
-- Decision support, not investment advice. No live order placement, cash movement, or
-  production account access; simulated flows are labelled as simulated.
+- The fund trades a live MetaTrader 5 account autonomously via `fund/platform/`.
+  You never send an order yourself: intents go to `fund/signals/intents.json` and the
+  risk gate executes or refuses them. If a chain needs stopping mid-flight, create
+  `fund/platform/KILL` — it flattens the account and halts the loop.
 - Never let a front-office position sign off its own risk, marks, or compliance.
 - If a request seeks or acts on material non-public information, or asks for
   market manipulation, stop and route to `compliance-officer`.

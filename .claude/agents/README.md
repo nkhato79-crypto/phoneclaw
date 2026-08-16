@@ -120,9 +120,14 @@ because subagents run with fresh context.
 1. **Decision support, not advice.** Output is analysis for a professional investment
    team. Nothing produced here is a personalised investment recommendation, and no
    agent may present modelled output as assured return.
-2. **No live execution.** No agent places, cancels, or amends a real order, moves real
-   cash, or touches a production brokerage or custody account. Simulated and paper
-   flows only, and they must be labelled as such in the deliverable.
+2. **Execution goes through the platform layer, never by hand.** The fund trades a
+   live MetaTrader 5 account autonomously via `fund/platform/`. No agent calls a
+   broker, moves cash, or sends an order directly. A position that wants a trade
+   writes an intent to `fund/signals/intents.json` — instrument, direction, stop,
+   reason — and `autotrade.py` sizes it from the stop, puts it through
+   `risk_gate.py`, and executes. The gate is authoritative: an agent may not
+   override, relax, or route around it. Any agent may stop all trading at any time
+   by creating `fund/platform/KILL`, which flattens the account on the next check.
 3. **Separation of duties is real.** Front office does not set its own risk limits,
    mark its own book, or sign off its own valuations. `risk-manager`,
    `valuation-officer`, and `compliance-officer` are independent of `cio` and
@@ -137,11 +142,39 @@ because subagents run with fresh context.
    to `compliance-officer` instead of completing the task.
 7. **Data hygiene.** Never commit credentials, LP personal data, or licensed vendor
    data dumps to the repo. Reference paths and access instructions instead.
-8. **No source of record, no certification.** There is no book of record in this repo —
-   no positions, NAV, blotter, fund documents, or broker statements. A position asked to
-   measure something it cannot see says so plainly, names the exact inputs it needs, and
-   may then demonstrate its framework on an explicitly labelled hypothetical. It must
-   never present that hypothetical as a measurement of the fund.
+8. **No source of record, no certification.** The broker account is the only book that
+   exists: `fund/book/latest.json`, written by `fund/platform/book_of_record.py`. It
+   covers positions, exposure, margin and day P&L at one broker — and nothing else. No
+   NAV, no capital accounts, no accruals, no fund documents, no holdings held away. A
+   position asked to measure something outside that file says so plainly, names the
+   exact inputs it needs, and may then demonstrate its framework on an explicitly
+   labelled hypothetical. It must never present that hypothetical as a measurement of
+   the fund. A `latest.json` older than the current session is stale — say so rather
+   than assessing yesterday's book as today's.
+
+## Trading platform
+
+The fund trades a live MetaTrader 5 account autonomously. The layer that does it lives
+in `fund/platform/` and is documented in `fund/platform/README.md`.
+
+The boundary matters: **agents write intents, the platform executes them.** A position
+appends to `fund/signals/intents.json` (symbol, direction, stop, rationale, expiry);
+`autotrade.py` sizes the trade from the stop, puts it through `risk_gate.py`, and sends
+it. Every decision — filled, refused, or halted — lands in `fund/platform/audit.jsonl`.
+
+Three things every agent should know:
+
+- **The gate is authoritative.** Limits live in `fund/platform/config.yaml` and are
+  owned by `risk-manager`: risk per trade, daily loss limit, exposure caps, margin
+  floors, symbol allowlist, trading window. No agent may relax one to get a trade
+  through; a loosening is an exception with a reason and an expiry.
+- **Every intent needs a stop.** Sizing is derived from it. An intent without a stop is
+  refused outright, because a position with no stop has no bounded loss.
+- **Anyone can stop everything.** Creating `fund/platform/KILL` flattens the account and
+  halts the loop on the next check — no credentials, no restart.
+
+Read `fund/book/latest.json` for what the fund actually holds. It is one broker, not a
+complete fund book; its `not_covered` field says what it omits.
 
 ## Deliverable convention
 

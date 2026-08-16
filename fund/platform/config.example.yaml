@@ -1,0 +1,42 @@
+# Copy to fund/platform/config.yaml and edit. The example ships disarmed:
+# allow_live is false, so it will refuse to trade a real account until you
+# deliberately change it.
+#
+# Credentials are NOT stored here. Set the password in the environment of the
+# shell that runs the trader:   set MT5_PASSWORD=...   (Windows)
+
+login: null                      # null = attach to whatever account the running terminal holds
+server: null                     # e.g. "YourBroker-Server"
+password_env: MT5_PASSWORD
+terminal_path: null              # e.g. "C:/Program Files/MetaTrader 5/terminal64.exe"
+
+signals_file: fund/signals/intents.json
+audit_log: fund/platform/audit.jsonl
+poll_seconds: 60
+
+risk:
+  # ---- arming -------------------------------------------------------------
+  allow_live: false              # set true ONLY when you intend real money to move
+  kill_switch_file: fund/platform/KILL
+
+  # ---- universe and timing ------------------------------------------------
+  symbols: [XAUUSD]              # allowlist; anything not listed is refused
+  trading_days: [0, 1, 2, 3, 4]  # Mon-Fri
+  trading_hours_utc: [6, 20]     # avoids the thin hours around the rollover
+
+  # ---- exposure, as a multiple of equity ----------------------------------
+  max_gross_exposure: 2.0
+  max_symbol_exposure: 1.0
+  max_order_exposure: 0.5
+  max_open_positions: 4
+  max_positions_per_symbol: 2
+
+  # ---- loss control -------------------------------------------------------
+  max_risk_per_trade: 0.01       # 1% of equity at the stop; sizes every order
+  daily_loss_limit: 0.03         # 3% realised + open -> flatten and stop
+  equity_floor: 0                # absolute account-currency floor; 0 disables
+  max_consecutive_losses: 4
+
+  # ---- margin -------------------------------------------------------------
+  min_margin_level: 300.0        # percent; MT5 margin call is near 100
+  min_free_margin_fraction: 0.30

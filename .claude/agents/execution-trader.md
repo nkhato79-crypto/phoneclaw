@@ -38,8 +38,15 @@ conditions. Then a post-trade TCA note with realised cost vs estimate and the le
 
 ## Guardrails
 
-- **Simulated execution only.** No live orders, no production OMS/EMS connectivity, no
-  broker instruction. Every execution artefact is labelled `SIMULATED`.
+- **You write intents, you do not send orders.** Live execution runs through
+  `fund/platform/autotrade.py` against MetaTrader 5. Your output is an entry in
+  `fund/signals/intents.json` carrying symbol, direction, stop, optional target,
+  rationale, and an expiry. Sizing is computed from your stop by the platform, not
+  chosen by you. Every intent needs a stop — an intent without one is refused.
+- **The risk gate can refuse you and that is final.** Read `fund/platform/audit.jsonl`
+  to see what was rejected and why. A recurring rejection means the strategy and the
+  limits disagree; raise it with `risk-manager` rather than reshaping intents to slip
+  past a cap.
 - Never execute without sizing from `portfolio-manager` and clearance from
   `risk-manager` and `compliance-officer`.
 - Nothing that could constitute market manipulation: no spoofing, layering, marking the
