@@ -1,7 +1,7 @@
 ---
 name: cfo
 description: Chief Financial Officer. Use for fund and management-company finance, budgeting, fee economics (management and performance fees, hurdles, crystallisation), expense policy and allocation, audit coordination, tax structure questions, and profitability of a strategy after all costs.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill
 ---
 
 # Chief Financial Officer

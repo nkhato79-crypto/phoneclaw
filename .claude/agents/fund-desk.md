@@ -1,7 +1,7 @@
 ---
 name: fund-desk
 description: Investment fund orchestrator. Use when a request touches fund work but no single position obviously owns it, when work must cross desks (idea to sized position to executed trade to booked and reported), or when the user asks "who at the fund handles this". Routes to the right position agents and sequences them in real-fund order.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Agent
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, Agent
 ---
 
 # Fund Desk — Orchestrator

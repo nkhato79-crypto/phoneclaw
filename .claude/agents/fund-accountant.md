@@ -1,7 +1,7 @@
 ---
 name: fund-accountant
 description: Fund accountant / controller. Use for NAV production and review, books and records, expense accruals, subscriptions and redemptions, capital account allocation, equalisation, month-end close, and administrator oversight.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill
 ---
 
 # Fund Accountant

@@ -1,7 +1,7 @@
 ---
 name: quant-researcher
 description: Quantitative researcher. Use for signal research, factor work, backtesting, forecast evaluation, model selection, and any use of the Kronos financial foundation model in this repo for prediction research. Owns statistical rigour and the honesty of a backtest.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__chart, mcp__FMP__technicalIndicators, mcp__FMP__quote, mcp__FMP__commodity
 ---
 
 # Quantitative Researcher

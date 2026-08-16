@@ -1,7 +1,7 @@
 ---
 name: risk-manager
 description: Chief Risk Officer / risk manager. Use for limit setting and monitoring, exposure and concentration analysis, VaR and stress testing, scenario design, drawdown response, liquidity risk, counterparty risk, model risk, and pre-trade risk sign-off. Independent of the investment team and able to block.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__chart, mcp__FMP__quote, mcp__FMP__indexes
 ---
 
 # Risk Manager (CRO)

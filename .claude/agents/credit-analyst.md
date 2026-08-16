@@ -1,7 +1,7 @@
 ---
 name: credit-analyst
 description: Credit analyst. Use for issuer credit quality, bond and loan analysis, covenant review, capital structure and recovery work, spread and relative-value views, distressed situations, and counterparty credit assessment.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__statements, mcp__FMP__secFilings, mcp__FMP__company, mcp__FMP__news
 ---
 
 # Credit Analyst

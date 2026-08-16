@@ -67,6 +67,51 @@ flowchart TD
 | Client | `investor-relations` | LP communication, fundraising, DDQs, capital activity |
 | Client | `performance-analyst` | Returns, attribution, benchmark and GIPS-style reporting |
 
+## Tools and skills
+
+Every agent holds `Read`, `Grep`, `Glob`, `Write`, `Edit`, `WebSearch`, `WebFetch`, and
+`Skill`. Beyond that, grants are deliberate rather than uniform:
+
+| Grant | Who holds it | Why |
+| --- | --- | --- |
+| `Bash` | All except `cio`, `compliance-officer`, `investor-relations`, `legal-counsel` | Judgment and drafting roles have no reason to execute |
+| `Agent` | `fund-desk` only | It is the sole delegator; positions do not spawn each other |
+| `mcp__FMP__*` | The eight positions below | Market data, scoped to what each actually reads |
+
+Skills are what let a position work in the formats a fund actually keeps its records in.
+Reach for them rather than re-implementing:
+
+- `xlsx` — `fund-accountant`, `performance-analyst`, `cfo`, `valuation-officer`,
+  `trade-operations`, `treasury-collateral-manager`, `risk-manager`
+- `pdf` — `legal-counsel`, `compliance-officer`, `credit-analyst`,
+  `equity-research-analyst`, `internal-auditor`
+- `docx` — `investor-relations`, `legal-counsel`, `compliance-officer`, `internal-auditor`
+- `pptx` — `investor-relations`, `cio`
+- `dataviz` — `performance-analyst`, `risk-manager`, `quant-researcher`, `macro-strategist`
+- `discovery-review` — `legal-counsel`, `internal-auditor`
+- `code-review`, `security-review` — `quant-developer`, `head-of-technology`
+- `brand-guidelines`, `canvas-design` — `investor-relations`
+
+Market-data grants, by position:
+
+| Position | FMP tools |
+| --- | --- |
+| `equity-research-analyst` | `statements`, `company`, `quote`, `analyst`, `earningsTranscript`, `secFilings`, `discountedCashFlow` |
+| `credit-analyst` | `statements`, `secFilings`, `company`, `news` |
+| `macro-strategist` | `economics`, `commodity`, `forex`, `indexes`, `marketPerformance`, `commitmentOfTraders` |
+| `quant-researcher` | `chart`, `technicalIndicators`, `quote`, `commodity` |
+| `risk-manager` | `chart`, `quote`, `indexes` |
+| `valuation-officer` | `quote`, `chart`, `marketHours` |
+| `execution-trader` | `quote`, `chart`, `marketHours` |
+| `performance-analyst` | `indexes`, `marketPerformance`, `chart` |
+| `portfolio-manager` | `quote`, `chart` |
+| `treasury-collateral-manager` | `forex`, `economics` |
+| `compliance-officer` | `insiderTrades`, `form13F`, `senate` |
+| `alt-data-analyst` | `company`, `search` |
+
+Market data is not a book. None of these tools tell a position what the fund owns — see
+the house rule below on measuring what you cannot see.
+
 ## Shared house rules
 
 Every agent in this roster operates under these; they are repeated in each agent file
@@ -92,6 +137,11 @@ because subagents run with fresh context.
    to `compliance-officer` instead of completing the task.
 7. **Data hygiene.** Never commit credentials, LP personal data, or licensed vendor
    data dumps to the repo. Reference paths and access instructions instead.
+8. **No source of record, no certification.** There is no book of record in this repo —
+   no positions, NAV, blotter, fund documents, or broker statements. A position asked to
+   measure something it cannot see says so plainly, names the exact inputs it needs, and
+   may then demonstrate its framework on an explicitly labelled hypothetical. It must
+   never present that hypothetical as a measurement of the fund.
 
 ## Deliverable convention
 

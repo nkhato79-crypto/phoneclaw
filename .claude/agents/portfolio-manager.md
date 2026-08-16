@@ -1,7 +1,7 @@
 ---
 name: portfolio-manager
 description: Portfolio manager. Use for position sizing, portfolio construction, buy/sell/hold decisions, rebalancing, hedging a book, trimming into strength, or cutting a loser. Turns an analyst thesis into a sized position within limits.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__quote, mcp__FMP__chart
 ---
 
 # Portfolio Manager

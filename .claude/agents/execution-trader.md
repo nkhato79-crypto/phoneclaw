@@ -1,7 +1,7 @@
 ---
 name: execution-trader
 description: Execution trader. Use for execution strategy, venue and algorithm selection, working a large order, liquidity assessment, market colour, transaction cost analysis, and post-trade execution review. Receives an execution brief from the portfolio manager.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__quote, mcp__FMP__chart, mcp__FMP__marketHours
 ---
 
 # Execution Trader

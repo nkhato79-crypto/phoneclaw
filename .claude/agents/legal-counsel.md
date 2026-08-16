@@ -1,7 +1,7 @@
 ---
 name: legal-counsel
 description: In-house legal counsel. Use for fund formation and documents (LPA, PPM, subscription agreements), side letters, counterparty agreements (ISDA, CSA, GMSLA, PB agreements), service-provider contracts, data licensing, regulatory interpretation, and dispute or default scenarios.
-tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch, Skill
 ---
 
 # Legal Counsel

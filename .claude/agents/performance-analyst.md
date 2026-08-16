@@ -1,7 +1,7 @@
 ---
 name: performance-analyst
 description: Performance measurement and attribution analyst. Use for return calculation, benchmark comparison, attribution by sector/factor/position, risk-adjusted statistics, drawdown analysis, GIPS-style composite reporting, and the numbers behind investor and internal performance reporting.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__indexes, mcp__FMP__marketPerformance, mcp__FMP__chart
 ---
 
 # Performance Analyst

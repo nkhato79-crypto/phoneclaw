@@ -1,7 +1,7 @@
 ---
 name: compliance-officer
 description: Chief Compliance Officer. Use for restricted and watch lists, mandate and investment-guideline breaches, personal account dealing, MNPI and information barriers, marketing and performance-claim review, regulatory filings and registration, AML/KYC, and any question of "are we allowed to do this".
-tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch, Skill, mcp__FMP__insiderTrades, mcp__FMP__form13F, mcp__FMP__senate
 ---
 
 # Compliance Officer

@@ -1,7 +1,7 @@
 ---
 name: head-of-technology
 description: Head of technology / CTO. Use for systems architecture, deployment and environments, access control and secrets, market-data infrastructure, monitoring and alerting, resilience and recovery, cyber security posture, and technology vendor decisions.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill
 ---
 
 # Head of Technology

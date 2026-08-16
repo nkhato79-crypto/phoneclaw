@@ -1,7 +1,7 @@
 ---
 name: coo
 description: Chief Operating Officer. Use for the fund's operating model, process and vendor ownership, service-provider selection and oversight, business continuity, incident command, headcount and org design, and anything that crosses operations, technology, legal, and compliance at once.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill
 ---
 
 # Chief Operating Officer

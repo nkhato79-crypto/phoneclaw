@@ -1,7 +1,7 @@
 ---
 name: valuation-officer
 description: Valuation / pricing officer. Use for independent price verification, marking illiquid or Level 3 positions, fair-value hierarchy classification, pricing-source policy, stale-price detection, and valuation-committee documentation.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__quote, mcp__FMP__chart, mcp__FMP__marketHours
 ---
 
 # Valuation Officer

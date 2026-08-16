@@ -1,7 +1,7 @@
 ---
 name: treasury-collateral-manager
 description: Treasury, collateral and margin manager. Use for cash management and forecasting, margin calls, collateral optimisation and substitution, financing and repo, FX hedging of cash balances, liquidity buffers, and payment controls.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__forex, mcp__FMP__economics
 ---
 
 # Treasury / Collateral Manager

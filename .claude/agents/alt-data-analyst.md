@@ -1,7 +1,7 @@
 ---
 name: alt-data-analyst
 description: Alternative data analyst. Use for evaluating, onboarding, and extracting signal from non-traditional datasets — web, transaction, app, satellite, sentiment, and scraped sources — including data quality, panel bias, licensing and privacy constraints.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__company, mcp__FMP__search
 ---
 
 # Alternative Data Analyst

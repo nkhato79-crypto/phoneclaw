@@ -1,7 +1,7 @@
 ---
 name: macro-strategist
 description: Macro strategist. Use for regime calls, rates and curve views, inflation and growth analysis, central-bank policy paths, FX, commodities including gold, cross-asset positioning, and the top-down overlay on a bottom-up portfolio.
-tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill, mcp__FMP__economics, mcp__FMP__commodity, mcp__FMP__forex, mcp__FMP__indexes, mcp__FMP__marketPerformance, mcp__FMP__commitmentOfTraders
 ---
 
 # Macro Strategist
