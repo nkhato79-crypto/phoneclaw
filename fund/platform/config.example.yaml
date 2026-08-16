@@ -40,3 +40,32 @@ risk:
   # ---- margin -------------------------------------------------------------
   min_margin_level: 300.0        # percent; MT5 margin call is near 100
   min_free_margin_fraction: 0.30
+
+  # ---- prop firm (FTMO) ---------------------------------------------------
+  # Checked IN ADDITION to everything above, and they bind first: breaching one
+  # ends the account rather than merely costing a loss.
+  #
+  # VERIFY THESE AGAINST YOUR OWN DASHBOARD before arming. Prop firms revise
+  # their terms, and they differ by account type (Normal vs Swing) and phase
+  # (Challenge, Verification, Funded). The values here are a starting point,
+  # not a statement of your agreement.
+  prop_firm:
+    enabled: false
+    firm: FTMO
+    account_type: normal         # normal | swing
+    phase: challenge             # challenge | verification | funded
+    initial_balance: 100000      # REQUIRED when enabled; every % below is of this
+
+    max_daily_loss_pct: 0.05     # 5% of initial, measured day-start balance -> equity
+    max_total_loss_pct: 0.10     # 10% of initial, static floor
+    profit_target_pct: 0.10      # informational only; 0.05 on verification
+
+    day_reset_tz: Europe/Prague  # FTMO server day is CE(S)T, not UTC
+    buffer_fraction: 0.20        # halt at 80% of each allowance, not at the line
+
+    hold_over_weekend: false     # true only on a Swing account
+    weekend_flat_from_utc: "19:00"
+
+    news_blackout_minutes: 2     # applies on Normal accounts
+    news_windows: []             # ISO timestamps of high-impact releases;
+                                 # an empty list means this check protects nothing

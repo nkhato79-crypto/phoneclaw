@@ -18,6 +18,7 @@ component that decides whether money moves is testable without a broker.
 
 ```
 python3 fund/platform/test_risk_gate.py     # 23 tests, no MT5 required
+python3 fund/platform/test_prop_firm.py     # 23 tests, no MT5 required
 ```
 
 ## Shape
@@ -47,11 +48,13 @@ is wrong.
 | File | Job |
 | --- | --- |
 | `mt5_client.py` | Terminal connection, account and position reads, order send. Decides nothing. |
-| `risk_gate.py` | Every limit. No MT5 dependency, so it cannot be bypassed by mocking the broker. |
+| `risk_gate.py` | Every house limit. No MT5 dependency, so it cannot be bypassed by mocking the broker. |
+| `prop_firm.py` | FTMO rules — daily loss, total loss, weekend, news. Checked on top of the house limits and binding first. |
 | `book_of_record.py` | Account + positions → `fund/book/latest.json`, the file every agent reads. |
 | `autotrade.py` | The loop: read intents → size → gate → execute → log. |
 | `settings.py` | Config loading. Credentials come from the environment, never the file. |
 | `test_risk_gate.py` | 23 tests. Each one is a loss the system should refuse to take. |
+| `test_prop_firm.py` | 23 tests. Each one is an account death the system should refuse to walk into. |
 
 ## Setup
 
@@ -123,6 +126,41 @@ Two behaviours worth knowing:
   An autonomous system with no stop has no bounded loss per trade, leaving the
   daily limit as the only thing between it and the account.
 
+## FTMO rules
+
+Enabled under `prop_firm:` in `config.yaml`, off by default. When on, they are checked
+**in addition to** the house limits above and bind first — breaching one ends the
+account rather than costing a loss, so the system halts at a buffer short of each line.
+
+| Rule | Default | Measured as |
+| --- | --- | --- |
+| Max daily loss | 5% of initial balance | day-start balance − current equity |
+| Max total loss | 10% of initial balance | static floor from the initial balance |
+| Day boundary | `Europe/Prague` | FTMO server midnight, CE(S)T |
+| Buffer | 20% | halt at 4,000 of a 5,000 daily allowance |
+| Weekend | flat from 19:00 UTC Friday | Normal accounts; Swing may hold |
+| News blackout | ±2 min | Normal accounts; needs `news_windows` supplied |
+
+Three implementation details that are easy to get wrong and expensive to get wrong:
+
+- **Percentages are of the initial balance.** Down 5% and the daily allowance is still
+  5% of what you started with, not of what is left. This is a different measure from
+  `max_risk_per_trade`, which is a fraction of *current* equity — both apply.
+- **Equity, not balance.** Floating losses count toward the daily rule, so an open
+  loser breaches it. There is no waiting for it to come back.
+- **Prague midnight, not UTC.** Two hours' difference in summer. A loss at 23:30 UTC
+  belongs to the next FTMO day; reset on UTC and the system hands itself a fresh
+  allowance two hours early.
+
+Position size falls automatically as the day's allowance is spent: the risk fraction is
+the tightest of the intent's request, the house cap, and what the buffered FTMO
+headroom can absorb. A trade whose stop-out would push the day through the buffer is
+refused rather than shrunk to nothing.
+
+**Verify the numbers against your own dashboard before arming.** FTMO revises its terms
+and they vary by account type and phase. Everything here is configurable precisely
+because the defaults should not be trusted as a statement of your agreement.
+
 ## Stopping it
 
 ```bat
@@ -145,7 +183,10 @@ Stated plainly, because the gaps matter more than the features:
 - **No strategy.** Intents come from the agents; this layer sizes, gates and
   executes. A bad intent that passes the gate becomes a real losing trade.
 - **No slippage or gap protection.** Stops are broker-side, so a weekend gap can
-  fill well through them. The daily loss limit reacts after the fact, not during.
+  fill well through them. The daily loss limit reacts after the fact, not during. On a
+  prop account this is the main way the buffer gets jumped rather than approached.
+- **No news calendar.** `news_windows` is a list you supply. Left empty, the blackout
+  check passes everything — it looks like protection and is not.
 - **No tax or regulatory reporting.**
 
 ## Daily check

@@ -29,6 +29,8 @@ import pathlib
 from dataclasses import dataclass, field
 from typing import Any, Iterable
 
+from prop_firm import PropFirmRules
+
 
 @dataclass
 class Decision:
@@ -77,6 +79,11 @@ DEFAULTS: dict[str, Any] = {
     # Margin
     "min_margin_level": 300.0,     # percent; MT5 margin call territory is ~100
     "min_free_margin_fraction": 0.30,
+
+    # Prop-firm rules (FTMO by default). See prop_firm.py — these are checked in
+    # ADDITION to everything above, and they bind first because breaching one
+    # ends the account rather than merely costing money.
+    "prop_firm": {},
 }
 
 
@@ -98,6 +105,7 @@ class RiskGate:
     def __init__(self, config: dict[str, Any] | None = None, repo_root: str | pathlib.Path = "."):
         self.cfg = load_config(config)
         self.root = pathlib.Path(repo_root)
+        self.prop = PropFirmRules(self.cfg.get("prop_firm"))
 
     # ------------------------------------------------------------------ state
 
@@ -113,8 +121,14 @@ class RiskGate:
 
     def evaluate_account(self, account: dict[str, Any], positions: Iterable[dict[str, Any]],
                          realised_today: float, consecutive_losses: int = 0,
-                         now: dt.datetime | None = None) -> Decision:
-        """Halt conditions. Run this before considering any order, every cycle."""
+                         now: dt.datetime | None = None,
+                         day_start_balance: float | None = None) -> Decision:
+        """Halt conditions. Run this before considering any order, every cycle.
+
+        `day_start_balance` is the balance at the prop firm's server midnight and
+        is required when prop-firm rules are enabled — the firm's daily loss is
+        measured from it, not from current equity.
+        """
         d = Decision(allow=True)
         now = now or dt.datetime.now(dt.timezone.utc)
         positions = list(positions)
@@ -159,6 +173,24 @@ class RiskGate:
             d.deny(f"free margin {free_frac:.0%} of equity below floor "
                    f"{self.cfg['min_free_margin_fraction']:.0%}", "HALT")
 
+        # Prop-firm rules bind on top of the house limits. They are checked last
+        # so their reasons appear alongside, but they are the ones that end an
+        # account rather than just costing a loss.
+        if self.prop.enabled:
+            if day_start_balance is None:
+                return d.deny(
+                    "prop-firm rules are enabled but the day's starting balance is "
+                    "unknown — cannot measure the daily loss, failing closed", "HALT")
+            ok, reasons, actions, head = self.prop.evaluate_account(
+                equity, day_start_balance, now)
+            d.note(self.prop.status_line(head))
+            if not ok:
+                for r in reasons:
+                    d.deny(r)
+                for a in actions:
+                    if a not in d.actions:
+                        d.actions.append(a)
+
         if d.allow:
             d.note(f"account clear — equity {equity:,.2f}, day P&L {day_pnl:,.2f}, "
                    f"{len(positions)} open")
@@ -168,7 +200,8 @@ class RiskGate:
 
     def evaluate_order(self, order: dict[str, Any], account: dict[str, Any],
                        positions: Iterable[dict[str, Any]],
-                       now: dt.datetime | None = None) -> Decision:
+                       now: dt.datetime | None = None,
+                       day_start_balance: float | None = None) -> Decision:
         """Per-order checks.
 
         `order` needs: symbol, direction, volume, price, sl, contract_size.
@@ -247,6 +280,16 @@ class RiskGate:
         if len(sym_positions) >= self.cfg["max_positions_per_symbol"]:
             d.deny(f"{len(sym_positions)} positions already in {symbol}, "
                    f"cap {self.cfg['max_positions_per_symbol']}")
+
+        if self.prop.enabled:
+            if day_start_balance is None:
+                return d.deny("prop-firm rules enabled but day-start balance unknown — "
+                              "failing closed")
+            head = self.prop.headroom(equity, day_start_balance, now)
+            ok, reasons = self.prop.evaluate_order(risk_cash, now, head)
+            if not ok:
+                for r in reasons:
+                    d.deny(r)
 
         if d.allow:
             d.note(f"cleared {order['direction']} {order['volume']} {symbol} — "

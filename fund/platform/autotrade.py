@@ -40,6 +40,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from book_of_record import build_book, write_book  # noqa: E402
 from mt5_client import MT5Client, MT5Error  # noqa: E402
+from prop_firm import day_start  # noqa: E402
 from risk_gate import RiskGate, size_for_risk  # noqa: E402
 from settings import load_settings  # noqa: E402
 
@@ -138,15 +139,29 @@ def cycle(client: MT5Client, gate: RiskGate, audit: Audit, settings, dry_run: bo
     """One pass. Returns False when the loop should stop."""
     account = client.account().to_dict()
     positions = [p.to_dict() for p in client.positions()]
-    midnight = dt.datetime.now(dt.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    realised = client.realised_pnl(midnight)
+    now = dt.datetime.now(dt.timezone.utc)
+
+    # The day boundary is the prop firm's server midnight when its rules are on
+    # (CE(S)T for FTMO — two hours off UTC in summer), otherwise UTC midnight.
+    # Reset on the wrong boundary and the system believes it has a fresh daily
+    # allowance hours before it actually does.
+    if gate.prop.enabled:
+        boundary = day_start(now, gate.prop.cfg["day_reset_tz"])
+    else:
+        boundary = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    realised = client.realised_pnl(boundary)
+
+    # Balance at the boundary, derived rather than remembered so a restart does
+    # not lose it. Exact unless a deposit or withdrawal landed mid-day.
+    day_start_balance = account["balance"] - realised
 
     # Refresh the book every cycle: it is what the agents read, and a stale book
     # is worse than none because it looks current.
     write_book(build_book(account, positions, realised), REPO)
 
     verdict = gate.evaluate_account(account, positions, realised,
-                                    consecutive_losses=audit.consecutive_losses())
+                                    consecutive_losses=audit.consecutive_losses(),
+                                    now=now, day_start_balance=day_start_balance)
     audit.write("account_check", account=account["login"], mode=account["mode"] if "mode" in account
                 else ("LIVE" if account["is_live"] else "DEMO"),
                 equity=account["equity"], decision=verdict.to_dict())
@@ -196,10 +211,22 @@ def cycle(client: MT5Client, gate: RiskGate, audit: Audit, settings, dry_run: bo
             continue
 
         price = ask if intent.get("direction") == "long" else bid
+
+        # Risk fraction is the tightest of: what the intent asked for, the house
+        # cap, and what the prop firm's remaining allowance can absorb. The last
+        # one shrinks position size automatically as the day's allowance is used,
+        # so a losing morning makes the afternoon's trades smaller rather than
+        # walking the account into a breach.
+        risk_fraction = min(float(intent.get("risk_fraction", gate.cfg["max_risk_per_trade"])),
+                            gate.cfg["max_risk_per_trade"])
+        if gate.prop.enabled:
+            head = gate.prop.headroom(account["equity"], day_start_balance, now)
+            prop_cap = gate.prop.max_risk_cash(head) / account["equity"]
+            risk_fraction = min(risk_fraction, prop_cap)
+
         volume = size_for_risk(
             equity=account["equity"],
-            risk_fraction=min(float(intent.get("risk_fraction", gate.cfg["max_risk_per_trade"])),
-                              gate.cfg["max_risk_per_trade"]),
+            risk_fraction=risk_fraction,
             price=price, sl=float(intent.get("sl", 0) or 0),
             contract_size=info.trade_contract_size,
             volume_step=info.volume_step, volume_min=info.volume_min,
@@ -211,7 +238,8 @@ def cycle(client: MT5Client, gate: RiskGate, audit: Audit, settings, dry_run: bo
             "volume": volume, "price": price, "sl": intent.get("sl"),
             "tp": intent.get("tp"), "contract_size": info.trade_contract_size,
         }
-        decision = gate.evaluate_order(order, account, positions)
+        decision = gate.evaluate_order(order, account, positions, now=now,
+                                       day_start_balance=day_start_balance)
 
         if volume <= 0:
             decision.deny("sized below the broker minimum at this stop distance")
@@ -270,6 +298,14 @@ def main() -> int:
             print(f"connected: {acct.login}@{acct.server} [{mode}] "
                   f"equity {acct.equity:,.2f} {acct.currency}"
                   + ("  (dry-run)" if args.dry_run else ""), flush=True)
+            if gate.prop.enabled:
+                print(f"prop firm: {gate.prop.cfg['firm']} {gate.prop.cfg['phase']} "
+                      f"({gate.prop.cfg['account_type']}), initial balance "
+                      f"{gate.prop.cfg['initial_balance']:,.0f}, "
+                      f"daily {gate.prop.cfg['max_daily_loss_pct']:.0%} / total "
+                      f"{gate.prop.cfg['max_total_loss_pct']:.0%}, stopping "
+                      f"{gate.prop.cfg['buffer_fraction']:.0%} short of each", flush=True)
+
             audit.write("session_start", account=acct.login, mode=mode,
                         equity=acct.equity, dry_run=args.dry_run, config=gate.cfg)
 
